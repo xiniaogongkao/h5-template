@@ -112,7 +112,9 @@ export default {
   get: (url, data = {}, headers = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .get(apiConfig.baseUrl + url, { params: data })
+        .get(apiConfig.baseUrl + url, { params: data }, {
+          headers
+        })
         .then(response => {
           resolve(response.data)
         })
@@ -168,7 +170,10 @@ export default {
     return new Promise((resolve, reject) => {
       service
         .post(apiConfig.baseUrl + url, data, {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+            ...headers
+          },
           transformRequest: [
             data => {
               return qs.stringify(data)
