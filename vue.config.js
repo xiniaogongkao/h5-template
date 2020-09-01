@@ -24,15 +24,6 @@ module.exports = {
   assetsDir: 'static', // 打包文件目录
   lintOnSave: isDevelopment, // eslint-loader 是否在保存的时候检查
   productionSourceMap: false,
-  devServer: {
-    open: true,
-    host: config.host,
-    port: config.port || 8080,
-    overlay: {
-      warnings: false,
-      errors: true
-    }
-  },
   css: {
     loaderOptions: {
       postcss: {
