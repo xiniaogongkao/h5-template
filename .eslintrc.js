@@ -231,12 +231,11 @@ module.exports = {
         allowTemplateLiterals: true
       }
     ],
-    semi: [2, 'always'],
-    'semi-spacing': [
+    semi: [
       2,
+      'never',
       {
-        before: false,
-        after: true
+        beforeStatementContinuationChars: 'never'
       }
     ],
     'space-before-blocks': [2, 'always'],

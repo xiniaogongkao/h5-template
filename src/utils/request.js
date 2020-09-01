@@ -1,18 +1,17 @@
 // 设置请求统一信息
-import axios from 'axios';
-import store from '@/store';
-import { Message } from 'element-ui';
-import qs from 'qs';
+import axios from 'axios'
+import qs from 'qs'
+import apiConfig from '../../config'
 
 const service = axios.create({
   timeout: 300000 // 超时设置
-});
+})
 
-let hasLogoutStatus = false; // 是否某个请求存在需要退出的状态
+let hasLogoutStatus = false // 是否某个请求存在需要退出的状态
 
-const queue = []; // 请求队列
+const queue = [] // 请求队列
 
-const CancelToken = axios.CancelToken; // axios内置的中断方法
+const CancelToken = axios.CancelToken // axios内置的中断方法
 
 /**
  * 拼接请求的url和方法；
@@ -20,8 +19,8 @@ const CancelToken = axios.CancelToken; // axios内置的中断方法
  * @param {Object} config 请求头对象
  */
 const token = config => {
-  return `${config.url}_${config.method}`;
-};
+  return `${config.url}_${config.method}`
+}
 
 /**
  * 中断重复的请求，并从队列中移除
@@ -29,273 +28,253 @@ const token = config => {
  */
 const removeQueue = config => {
   for (let i = 0, size = queue.length; i < size; i++) {
-    const task = queue[i];
-    if (!task) return;
+    const task = queue[i]
+    if (!task) return
     // 出现401，403状态码中断后续请求
-    const isLogout = token(config).includes('logout');
+    const isLogout = token(config).includes('logout')
     // 退出接口跳过中断逻辑
     if (!isLogout && hasLogoutStatus) {
-      task.token();
-      queue.splice(i, 1);
+      task.token()
+      queue.splice(i, 1)
     } else {
-      const cancelMethods = ['post', 'put', 'delete']; // 需要中断的请求方式
-      const { method } = config;
+      const cancelMethods = ['post', 'put', 'delete'] // 需要中断的请求方式
+      const { method } = config
       if (cancelMethods.includes(method)) {
         if (task.token === token(config)) {
-          task.cancel();
-          queue.splice(i, 1);
+          task.cancel()
+          queue.splice(i, 1)
         }
       }
     }
   }
-};
+}
 
 /**
  * 请求错误统一处理
  * @param {Object} response 错误对象
  */
 const errorHandle = response => {
-  const { status, data: { message }} = response;
-  let msg = message;
-  if (!message) {
-    switch (status) {
-      case 401:
-        msg = '您没有权限访问此操作！';
-        break;
-      case 403:
-        msg = '您的登录状态已失效，请重新登录。';
-        break;
-      case 424:
-        msg = response.data.error;
-        break;
-      default:
-        msg = '服务请求异常，请刷新重试。';
-    }
-  }
-  hasLogoutStatus = status === 401 || status === 403;
-  Message({
-    message: msg,
-    type: 'error'
-  });
-};
+  const { status } = response
+  hasLogoutStatus = status === 401 || status === 403
+}
 
 // 请求拦截器
 service.interceptors.request.use(
   config => {
     // 中断之前的同名请求
-    removeQueue(config);
+    removeQueue(config)
     // 添加cancelToken
     config.cancelToken = new CancelToken(c => {
-      queue.push({ token: token(config), cancel: c });
-    });
+      queue.push({ token: token(config), cancel: c })
+    })
     // 添加请求头
     // config.headers[key] = '...'
-    return config;
+    return config
   },
   error => {
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
-);
+)
 
 // 响应拦截器
 service.interceptors.response.use(
   response => {
     // 在请求完成后，自动移出队列
-    removeQueue(response.config);
+    removeQueue(response.config)
     // 错误码处理
     if (response.status !== 200) {
-      return Promise.reject(response);
+      return Promise.reject(response)
     }
-    return response;
+    return response
   },
   error => {
-    const { response } = error;
+    const { response } = error
     if (response) {
       // 错误处理
-      errorHandle(response);
-      return Promise.reject(response);
+      errorHandle(response)
+      return Promise.reject(response)
     } else {
       // 请求超时
       if (error.message.includes('timeout')) {
-        console.log('超时了');
+        console.log('超时了')
         // messages('error', '请求已超时，请刷新或检查互联网连接');
       } else {
         // 断网，可以展示断网组件
-        console.log('断网了');
+        console.log('断网了')
         // messages('error', '请检查网络是否已连接');
       }
     }
   }
-);
+)
 
 export default {
   axios,
   get: (url, data = {}, headers = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .get(store.getters.config.baseUrl + url, { params: data })
+        .get(apiConfig.baseUrl + url, { params: data })
         .then(response => {
-          resolve(response.data);
+          resolve(response.data)
         })
         .catch(error => {
-          reject(error);
-        });
+          reject(error)
+        })
     }).catch(error => {
-      throw new Error(error);
-    });
+      throw new Error(error)
+    })
   },
   exportFile: (url, data = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .post(store.getters.config.baseUrl + url, data, {
+        .post(apiConfig.baseUrl + url, data, {
           headers: { 'Content-Type': 'application/json' },
           withCredentials: true,
           responseType: 'blob'
         })
         .then(response => {
-          resolve(response);
+          resolve(response)
         })
         .catch(error => {
-          resolve(error);
-        });
+          resolve(error)
+        })
     }).catch(error => {
-      return Promise.reject(error);
-    });
+      return Promise.reject(error)
+    })
   },
   exportFormDataFile: (url, data = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .post(store.getters.config.baseUrl + url, data, {
+        .post(apiConfig.baseUrl + url, data, {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
           withCredentials: true,
           transformRequest: [
             data => {
-              return qs.stringify(data);
+              return qs.stringify(data)
             }
           ],
           responseType: 'blob'
         })
         .then(response => {
-          resolve(response);
+          resolve(response)
         })
         .catch(error => {
-          resolve(error);
-        });
+          resolve(error)
+        })
     }).catch(error => {
-      return Promise.reject(error);
-    });
+      return Promise.reject(error)
+    })
   },
   post: (url, data = {}, headers = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .post(store.getters.config.baseUrl + url, data, {
+        .post(apiConfig.baseUrl + url, data, {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
           transformRequest: [
             data => {
-              return qs.stringify(data);
+              return qs.stringify(data)
             }
           ]
         })
         .then(response => {
-          resolve(response.data);
+          resolve(response.data)
         })
         .catch(error => {
-          reject(error);
-        });
+          reject(error)
+        })
     }).catch(error => {
-      return Promise.reject(error);
-    });
+      return Promise.reject(error)
+    })
   },
   put: (url, data = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .put(store.getters.config.baseUrl + url, data, {
+        .put(apiConfig.baseUrl + url, data, {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
           },
           withCredentials: true,
           transformRequest: [
             data => {
-              return qs.stringify(data);
+              return qs.stringify(data)
             }
           ]
         })
         .then(response => {
-          resolve(response.data);
+          resolve(response.data)
         })
         .catch(error => {
-          throw new Error(error);
-        });
+          throw new Error(error)
+        })
     }).catch(error => {
-      throw new Error(error);
-    });
+      throw new Error(error)
+    })
   },
   putJson: (url, data = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .put(store.getters.config.baseUrl + url, data, {
+        .put(apiConfig.baseUrl + url, data, {
           headers: { 'Content-Type': 'application/json' },
           withCredentials: true
         })
         .then(response => {
-          resolve(response.data);
+          resolve(response.data)
         })
         .catch(error => {
-          throw new Error(error);
-        });
+          throw new Error(error)
+        })
     }).catch(error => {
-      throw new Error(error);
-    });
+      throw new Error(error)
+    })
   },
   postJson: (url, data = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .post(store.getters.config.baseUrl + url, data, {
+        .post(apiConfig.baseUrl + url, data, {
           headers: { 'Content-Type': 'application/json' },
           withCredentials: true
         })
         .then(response => {
-          resolve(response.data);
+          resolve(response.data)
         })
         .catch(error => {
-          throw new Error(error);
-        });
+          throw new Error(error)
+        })
     }).catch(error => {
-      throw new Error(error);
-    });
+      throw new Error(error)
+    })
   },
   delete: (url, data = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .delete(store.getters.config.baseUrl + url, {
+        .delete(apiConfig.baseUrl + url, {
           data
         })
         .then(response => {
-          resolve(response.data);
+          resolve(response.data)
         })
         .catch(error => {
-          throw new Error(error);
-        });
+          throw new Error(error)
+        })
     }).catch(error => {
-      throw new Error(error);
-    });
+      throw new Error(error)
+    })
   },
   deleteJson: (url, data = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .delete(store.getters.config.baseUrl + url, {
+        .delete(apiConfig.baseUrl + url, {
           headers: { 'Content-Type': 'application/json' },
           withCredentials: true,
           data
         })
         .then(response => {
-          resolve(response.data);
+          resolve(response.data)
         })
         .catch(error => {
-          throw new Error(error);
-        });
+          throw new Error(error)
+        })
     }).catch(error => {
-      throw new Error(error);
-    });
+      throw new Error(error)
+    })
   }
-};
+}

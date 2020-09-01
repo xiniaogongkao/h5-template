@@ -1,5 +1,4 @@
 const getters = {
-  config: state => state.config
-};
+}
 
-export default getters;
+export default getters
