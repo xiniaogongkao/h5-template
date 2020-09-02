@@ -1,7 +1,7 @@
 // 设置请求统一信息
 import axios from 'axios'
 import qs from 'qs'
-import apiConfig from '@/config.js'
+import apiConfig from '../../config/index.js'
 
 const service = axios.create({
   timeout: 300000 // 超时设置
