@@ -112,9 +112,7 @@ export default {
   get: (url, data = {}, headers = {}) => {
     return new Promise((resolve, reject) => {
       service
-        .get(apiConfig.baseUrl + url, { params: data }, {
-          headers
-        })
+        .get(apiConfig.baseUrl + url, { params: data, headers })
         .then(response => {
           resolve(response.data)
         })
